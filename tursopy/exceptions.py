@@ -16,3 +16,7 @@ class InvalidPlatformTokenException(Exception):
 
 class NotFoundExceptions(Exception):
     """Indicates a not found error."""
+
+
+class TursoRequestException(Exception):
+    """Indicates an error during a request."""

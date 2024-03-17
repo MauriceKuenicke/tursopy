@@ -1,7 +1,7 @@
 from typing import Optional
 import os
 from .exceptions import (MissingRequiredAttributeException, TokenAlreadyExistsException, TokenNotFoundException,
-                         InvalidPlatformTokenException)
+                         InvalidPlatformTokenException, TursoRequestException)
 from .endpoints import API_PATH
 import requests
 from .db import DatabasesClient
@@ -68,7 +68,7 @@ class TursoClient:
             error_message = response.json()["error"]
             raise InvalidPlatformTokenException(error_message)
         elif response.status_code != 200:
-            raise Exception(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content}")
 
         content = response.json()
         return content
@@ -86,7 +86,7 @@ class TursoClient:
         if response.status_code == 409:
             raise TokenAlreadyExistsException(f"Token with name <{name}> already exists.")
         elif response.status_code != 200:
-            raise Exception(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content}")
 
         content = response.json()
         return PlatformTokenCreated.load(content)
@@ -101,7 +101,7 @@ class TursoClient:
         response = requests.get(request_url, headers=self.base_header)
 
         if response.status_code != 200:
-            raise Exception(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content}")
 
         content = response.json()
         return [PlatformTokenRead.load(token) for token in content["tokens"]]
@@ -119,7 +119,7 @@ class TursoClient:
         if response.status_code == 404:
             raise TokenNotFoundException(f"Token with name <{name}> not found.")
         if response.status_code != 200:
-            raise Exception(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content}")
 
         content: str = response.json()["token"]
         return content

@@ -329,4 +329,4 @@ tags
 
 # End of https://www.toptal.com/developers/gitignore/api/python,intellij,visualstudiocode,vim
 
-e2e_test.py
+e2e.py

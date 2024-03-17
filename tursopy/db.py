@@ -4,6 +4,7 @@ import requests
 from typing import List, Optional
 import json
 from .dataclasses import DatabaseRead, DatabaseCreated
+from .exceptions import TursoRequestException
 
 if TYPE_CHECKING:
     import tursopy
@@ -25,7 +26,7 @@ class DatabasesClient:
         response = requests.get(request_url, headers=self.client.base_header)
 
         if response.status_code != 200:
-            raise Exception(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content}")
 
         content = response.json()
         return [DatabaseRead.load(x) for x in content["databases"]]
@@ -82,7 +83,7 @@ class DatabasesClient:
 
         if response.status_code != 200:
             error_message = response.json()["error"]
-            raise Exception(f"Something went wrong: {error_message}")
+            raise TursoRequestException(f"Something went wrong: {error_message}")
 
         content = response.json()["database"]
         return DatabaseCreated.load(content)
@@ -101,7 +102,7 @@ class DatabasesClient:
 
         if response.status_code != 200:
             error_message = response.json()["error"]
-            raise Exception(f"Something went wrong: {error_message}")
+            raise TursoRequestException(f"Something went wrong: {error_message}")
 
         deleted_db: str = response.json()["database"]
         return deleted_db

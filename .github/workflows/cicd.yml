@@ -1,7 +1,7 @@
 name: CICD
 on:
   push:
-    branches: [ master, initial-setup ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -55,7 +55,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    #if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.12

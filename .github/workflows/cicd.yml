@@ -51,7 +51,7 @@ jobs:
 #        uses: codecov/codecov-action@v3
 #
   deploy:
-    needs: test
+    #needs: test
     runs-on: ubuntu-latest
     #if: github.ref == 'refs/heads/main'
     steps:

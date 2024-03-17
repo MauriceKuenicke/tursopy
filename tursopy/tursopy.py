@@ -1,11 +1,18 @@
-from typing import Optional
 import os
-from .exceptions import (MissingRequiredAttributeException, TokenAlreadyExistsException, TokenNotFoundException,
-                         InvalidPlatformTokenException, TursoRequestException)
-from .endpoints import API_PATH
+from typing import Any, Optional
+
 import requests
+
+from .dataclasses import PlatformTokenCreated, PlatformTokenRead
 from .db import DatabasesClient
-from .dataclasses import PlatformTokenRead, PlatformTokenCreated
+from .endpoints import API_PATH
+from .exceptions import (
+    InvalidPlatformTokenException,
+    MissingRequiredAttributeException,
+    TokenAlreadyExistsException,
+    TokenNotFoundException,
+    TursoRequestException,
+)
 
 
 class TursoClient:
@@ -13,7 +20,7 @@ class TursoClient:
     TursoClient main class.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """
         Initialize a Turso client.
 
@@ -36,26 +43,26 @@ class TursoClient:
         self.base_url = "https://api.turso.tech"
         self.base_header = {
             "Authorization": f"Bearer {getattr(self, 'platform_token')}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         self._validate_user_token()
         self.db = DatabasesClient(base_client=self)
 
     @staticmethod
-    def _fetch_config(attribute, **kwargs) -> Optional[str]:
+    def _fetch_config(attribute: str, **kwargs: Any) -> Optional[str]:
         """
         Fetch config either from the keyword argument or the environment variables.
         :param attribute:
         :return: Config value if exists. Otherwise, None.
         """
-        args_config = kwargs.get(attribute, None)
+        args_config: Optional[str] = kwargs.get(attribute, None)
         env_value = os.getenv(f"turso_{attribute}", None)
         if args_config is not None:
             return args_config
         else:
             return env_value
 
-    def _validate_user_token(self):
+    def _validate_user_token(self) -> bool:
         """
         Validate the current platform api token.
         :return:
@@ -68,10 +75,9 @@ class TursoClient:
             error_message = response.json()["error"]
             raise InvalidPlatformTokenException(error_message)
         elif response.status_code != 200:
-            raise TursoRequestException(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
 
-        content = response.json()
-        return content
+        return True
 
     def create_platform_api_token(self, name: str) -> PlatformTokenCreated:
         """
@@ -86,7 +92,7 @@ class TursoClient:
         if response.status_code == 409:
             raise TokenAlreadyExistsException(f"Token with name <{name}> already exists.")
         elif response.status_code != 200:
-            raise TursoRequestException(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
 
         content = response.json()
         return PlatformTokenCreated.load(content)
@@ -101,7 +107,7 @@ class TursoClient:
         response = requests.get(request_url, headers=self.base_header)
 
         if response.status_code != 200:
-            raise TursoRequestException(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
 
         content = response.json()
         return [PlatformTokenRead.load(token) for token in content["tokens"]]
@@ -119,11 +125,7 @@ class TursoClient:
         if response.status_code == 404:
             raise TokenNotFoundException(f"Token with name <{name}> not found.")
         if response.status_code != 200:
-            raise TursoRequestException(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
 
         content: str = response.json()["token"]
         return content
-
-
-
-

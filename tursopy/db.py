@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING
-from .endpoints import API_PATH
-import requests
-from typing import List, Optional
 import json
-from .dataclasses import DatabaseRead, DatabaseCreated
+from typing import TYPE_CHECKING, List, Optional
+
+import requests
+
+from .dataclasses import DatabaseCreated, DatabaseRead
+from .endpoints import API_PATH
 from .exceptions import TursoRequestException
 
 if TYPE_CHECKING:
@@ -17,26 +18,43 @@ class DatabasesClient:
     """
     Databases client managing the databases endpoints.
     """
-    def __init__(self, base_client: "tursopy.TursoClient"):
+
+    def __init__(self, base_client: "tursopy.TursoClient") -> None:
+        """
+        Initialize the database client for api request management.
+        :param base_client: Base TursoClient.
+        """
         self.client = base_client
 
     def list_databases(self, org_name: str) -> List[DatabaseRead]:
+        """
+        Return a list of databases belonging to the organization or user.
+        :param org_name: Organization or username.
+        :return: List of databases.
+        """
         endpoint = API_PATH["list_databases"].format(org_name=org_name)
         request_url = self.client.base_url + endpoint
         response = requests.get(request_url, headers=self.client.base_header)
 
         if response.status_code != 200:
-            raise TursoRequestException(f"Something went wrong: {response.content}")
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
 
         content = response.json()
         return [DatabaseRead.load(x) for x in content["databases"]]
 
-    def create_database(self, org_name: str,
-                        name: str, is_schema: OptBool = None,
-                        schema: OptStr = None, seed_name: OptStr = None,
-                        seed_ts: OptStr = None, seed_type: OptStr = None,
-                        seed_url: OptStr = None, size_limit: OptStr = None,
-                        group: str = "default"):
+    def create_database(
+        self,
+        org_name: str,
+        name: str,
+        is_schema: OptBool = None,
+        schema: OptStr = None,
+        seed_name: OptStr = None,
+        seed_ts: OptStr = None,
+        seed_type: OptStr = None,
+        seed_url: OptStr = None,
+        size_limit: OptStr = None,
+        group: str = "default",
+    ) -> DatabaseCreated:
         """
         Creates a new database in a group for the organization or user.
 
@@ -55,7 +73,7 @@ class DatabasesClient:
          e.g. '1mb', '256mb', '1gb'.
         :param group: The name of the group where the database should be created.
         The group must already exist. Defaults to 'default'.
-        :return:
+        :return: DatabaseCreated
         """
         endpoint = API_PATH["create_database"].format(org_name=org_name)
         request_url = self.client.base_url + endpoint
@@ -66,18 +84,14 @@ class DatabasesClient:
         }
 
         if is_schema:
-            data["is_schema"] = is_schema
+            data["is_schema"] = is_schema  # type:ignore[assignment]
         if schema:
             data["schema"] = schema
         if size_limit:
             data["size_limit"] = size_limit
         if any([seed_name, seed_ts, seed_url, seed_type]):
-            seed_data = {
-                "name": seed_name,
-                "timestamp": seed_ts,
-                "type": seed_type,
-                "url": seed_url}
-            data["seed"] = seed_data
+            seed_data = {"name": seed_name, "timestamp": seed_ts, "type": seed_type, "url": seed_url}
+            data["seed"] = seed_data  # type:ignore[assignment]
 
         response = requests.post(request_url, data=json.dumps(data), headers=self.client.base_header)
 

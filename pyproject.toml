@@ -1,0 +1,38 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["D", "I", "PL", "RUF", "F", "W"]
+ignore = ["D200", "D212", "D203", "D104", "D100", "D103", "PLR2004", "D205", "D415", "D400", "D401",
+          "W191", "PLR0913", "PLR0915", "RUF100", "D206"]
+fixable = ["I001", "W292"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*" = ["D102", "D101"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+exclude = [
+    '^file1\.py$',   # TOML literal string (single-quotes, no escaping necessary)
+]
+strict = true
+ignore_missing_imports = true
+implicit_reexport = true
+
+[tool.coverage.run]
+source = ['tursopy']
+omit = ['*/__init__.py', '/tests/*']
+
+[tool.coverage.report]
+exclude_also = [
+    "def test_",
+    "if self.debug",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

@@ -48,3 +48,63 @@ client.db.delete_database(org_name="my-org", db_name=new_db.Name) # Delete your 
 ## Initial Platform API Token
 TursoPy assumes a platform api token to be available when running the first time. Please refer to the
 [official documentation](https://docs.turso.tech/cli/auth/token) to find out how to generate your token.
+
+
+## Response Models
+
+TursoPy models mirror the Turso platform API response models as much as possible. This way, you'll always know how
+to access the data just by looking at the platform documentation. TursoPy sometimes flattens the responses if it makes
+sense. This happens mostly for response models which only contain a single field with data.
+
+<div class="termy">
+
+```console
+$ curl -L https://api.turso.tech/v1/organizations/your-org/databases -H 'Authorization: Bearer YOUR-TOKEN'
+
+
+---> 100%
+
+{
+  "databases": [
+    {
+      "DbId": "0eb771dd-6906-11ee-8553-eaa7715aeaf2",
+      "Hostname": "your-db-your-org.turso.io",
+      "Name": "my-db",
+      "allow_attach": true,
+      "block_reads": true,
+      "block_writes": true,
+      "group": "default",
+      "is_schema": true,
+      "primaryRegion": "lhr",
+      "regions": [
+        "lhr",
+        "bos",
+        "nrt"
+      ],
+      "schema": "<string>",
+      "sleeping": true,
+      "type": "logical",
+      "version": "0.22.22"
+    }
+  ]
+}
+```
+
+</div>
+
+In those cases,
+you'll be able to access the data directly without going through that extra level.
+
+```py
+from tursopy import TursoClient
+
+client = TursoClient()
+my_databases = client.db.list_databases(org_name="my-org")   # (1)
+
+print("Schema:", my_databases[0].schema)   # (2)
+print("Group:", my_databases[0].group)
+print("Primary Region:", my_databases[0].primaryRegion)
+```
+
+1.  Returns a list of databases directly
+2.  Supports code completion

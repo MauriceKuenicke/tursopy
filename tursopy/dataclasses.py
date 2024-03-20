@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, fields
-from typing import Any, Dict, List, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -90,3 +90,44 @@ class DatabaseCreated(BaseDataClass):
     Name: str
     IssuedCertCount: int
     IssuedCertLimit: int
+
+
+@dataclass
+class ConfigUpdateResponse(BaseDataClass):
+    """
+    Response model for database config updates.
+    """
+
+    allow_attach: Optional[bool] = None
+    size_limit: Optional[str] = None
+
+
+@dataclass
+class Usage(BaseDataClass):
+    """
+    Raw usage data.
+    """
+
+    rows_read: int
+    rows_written: int
+    storage_byte: int
+
+
+@dataclass
+class SingleDBUsage(BaseDataClass):
+    """
+    Usage statistics for a single database.
+    """
+
+    uuid: str
+    usage: Usage
+
+
+@dataclass
+class UsageRead(BaseDataClass):
+    """
+    Response model for database usage statistics.
+    """
+
+    instances: List[SingleDBUsage]
+    total: Usage

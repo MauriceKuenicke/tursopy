@@ -12,4 +12,7 @@ API_PATH = {
     "list_databases": "/v1/organizations/{org_name}/databases",
     "create_database": "/v1/organizations/{org_name}/databases",
     "delete_database": "/v1/organizations/{org_name}/databases/{name}",
+    "retrieve_database": "/v1/organizations/{org_name}/databases/{name}",
+    "update_database": "/v1/organizations/{org_name}/databases/{name}/configuration",
+    "get_usage": "/v1/organizations/{org_name}/databases/{name}/usage",
 }

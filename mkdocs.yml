@@ -40,7 +40,6 @@ theme:
     - navigation.tracking
     - navigation.tabs.sticky
     - navigation.sections
-    - toc.integrate
     - navigation.top
     - search.highlight
     - search.share
@@ -88,3 +87,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+
+extra_css:
+  - css/termynal.css
+  - css/custom.css
+extra_javascript:
+  - js/termynal.js
+  - js/custom.js

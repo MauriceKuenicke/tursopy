@@ -1,9 +1,9 @@
 import json
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 import requests
 
-from .dataclasses import DatabaseCreated, DatabaseRead
+from .dataclasses import ConfigUpdateResponse, DatabaseCreated, DatabaseRead, UsageRead
 from .endpoints import API_PATH
 from .exceptions import TursoRequestException
 
@@ -50,7 +50,7 @@ class DatabasesClient:
         schema: OptStr = None,
         seed_name: OptStr = None,
         seed_ts: OptStr = None,
-        seed_type: OptStr = None,
+        seed_type: Optional[Literal["database", "dump"]] = None,
         seed_url: OptStr = None,
         size_limit: OptStr = None,
         group: str = "default",
@@ -59,22 +59,26 @@ class DatabasesClient:
         Creates a new database in a group for the organization or user.
 
         :param org_name: The name of the organization or user.
-        :param name: The name of the new database. Must contain only lowercase letters, numbers, dashes.
-         No longer than 32 characters.
-        :param is_schema: Mark this database as the parent schema database that updates child
-        databases with any schema changes.
+        :param name: The name of the new database. Must contain only lowercase letters, numbers, dashes. No longer than 32 characters.
+        :param is_schema: Mark this database as the parent schema database that updates child databases with any schema changes.
         :param schema: The name of the parent database to use as the schema. See Multi-DB Schemas.
         :param seed_name: The name of the existing database when database is used as a seed type.
-        :param seed_ts: A formatted ISO 8601 recovery point to create a database from.
-        This must be within the last 24 hours, or 30 days on the scaler plan.
+        :param seed_ts: A formatted ISO 8601 recovery point to create a database from. This must be within the last 24 hours, or 30 days on the scaler plan.
         :param seed_type: The type of seed to be used to create a new database. Either 'database' or 'dump'.
         :param seed_url: The URL returned by upload dump can be used with the dump seed type.
-        :param size_limit: The maximum size of the database in bytes. Values with units are also accepted,
-         e.g. '1mb', '256mb', '1gb'.
-        :param group: The name of the group where the database should be created.
-        The group must already exist. Defaults to 'default'.
+        :param size_limit: The maximum size of the database in bytes. Values with units are also accepted, e.g. '1mb', '256mb', '1gb'.
+        :param group: The name of the group where the database should be created. The group must already exist. Defaults to 'default'.
         :return: DatabaseCreated
         """
+        self._validate_create_database_body_parameters(
+            is_schema=is_schema,
+            schema=schema,
+            seed_type=seed_type,
+            seed_name=seed_name,
+            seed_url=seed_url,
+            seed_ts=seed_ts,
+        )
+
         endpoint = API_PATH["create_database"].format(org_name=org_name)
         request_url = self.client.base_url + endpoint
 
@@ -83,14 +87,24 @@ class DatabasesClient:
             "group": group,
         }
 
-        if is_schema:
+        if is_schema is not None:
             data["is_schema"] = is_schema  # type:ignore[assignment]
         if schema:
             data["schema"] = schema
         if size_limit:
             data["size_limit"] = size_limit
+
         if any([seed_name, seed_ts, seed_url, seed_type]):
-            seed_data = {"name": seed_name, "timestamp": seed_ts, "type": seed_type, "url": seed_url}
+            seed_data = {"type": seed_type}
+
+            # At this point we can assume that every parameter set, is part of a valid combination
+            if seed_name:
+                seed_data["name"] = seed_name  # type:ignore[assignment]
+            if seed_ts:
+                seed_data["timestamp"] = seed_ts  # type:ignore[assignment]
+            if seed_url:
+                seed_data["url"] = seed_url  # type:ignore[assignment]
+
             data["seed"] = seed_data  # type:ignore[assignment]
 
         response = requests.post(request_url, data=json.dumps(data), headers=self.client.base_header)
@@ -101,6 +115,36 @@ class DatabasesClient:
 
         content = response.json()["database"]
         return DatabaseCreated.load(content)
+
+    @staticmethod
+    def _validate_create_database_body_parameters(
+        is_schema: OptBool,
+        schema: OptStr,
+        seed_type: Optional[Literal["database", "dump"]],
+        seed_name: OptStr,
+        seed_url: OptStr,
+        seed_ts: OptStr,
+    ) -> None:
+        """
+        Validate the body parameters to be a valid combination of parameters.
+        Raises a ValueException upon detection of invalid parameter combinations.
+        """
+        if is_schema is not None and schema:
+            raise ValueError("Can not specify a database as a parent and child database at the same time.")
+
+        if any([seed_name, seed_ts, seed_url, seed_type]):
+            if seed_type not in ["database", "dump"]:
+                raise ValueError("Seed type needs to be either 'database' or 'dump'.")
+
+            if seed_type == "database" and not seed_name:
+                raise ValueError("The name of an existing database when database is used as a seed type is missing.")
+
+            if seed_type == "dump" and not seed_url:
+                raise ValueError(
+                    "Seed URL missing. The URL returned by upload dump can be used " "with the dump seed type."
+                )
+
+            # TODO: What about seed_url + seed_ts?
 
     def delete_database(self, org_name: str, db_name: str) -> str:
         """
@@ -120,3 +164,87 @@ class DatabasesClient:
 
         deleted_db: str = response.json()["database"]
         return deleted_db
+
+    def retrieve(self, org_name: str, db_name: str) -> DatabaseRead:
+        """
+        Retrieve database information belonging to the organization or user.
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :return: DatabaseRead
+        """
+        endpoint = API_PATH["retrieve_database"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+
+        response = requests.get(request_url, headers=self.client.base_header)
+
+        if response.status_code != 200:
+            error_message = response.json()["error"]
+            raise TursoRequestException(f"Something went wrong: {error_message}")
+
+        content = response.json()["database"]
+        return DatabaseRead.load(content)
+
+    def update(
+        self, org_name: str, db_name: str, allow_attach: OptBool = None, size_limit: OptStr = None
+    ) -> ConfigUpdateResponse:
+        """
+        Update a database configuration belonging to the organization or user. A return value of None just declares
+        that no value has been updated for that parameter.
+
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :param allow_attach: Allow or disallow attaching databases to the current database.
+        :param size_limit: The maximum size of the database in bytes. Values with units are also accepted, e.g. 1mb, 256mb, 1gb.
+        :return: ConfigUpdateResponse
+        """
+        endpoint = API_PATH["update_database"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+
+        if allow_attach is None and size_limit is None:
+            raise ValueError("Either a value for 'allow_attach' or 'size_limit' needs to be given.")
+
+        data = {}
+        if allow_attach is not None:
+            data["allow_attach"] = allow_attach
+
+        if size_limit is not None:
+            data["size_limit"] = size_limit  # type:ignore[assignment]
+
+        response = requests.patch(request_url, headers=self.client.base_header, json=data)
+
+        if response.status_code != 200:
+            error_message = response.json()["error"]
+            raise TursoRequestException(f"Something went wrong: {error_message}")
+
+        content = response.json()
+        return ConfigUpdateResponse.load(content)
+
+    def get_usage(self, org_name: str, db_name: str, from_ts: OptStr = None, to_ts: OptStr = None) -> UsageRead:
+        """
+        Get the usage statistics for a database in the given timeframe.
+
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :param from_ts: The datetime to retrieve usage from in ISO 8601 format. Defaults to the current calendar
+         month if not provided. Example: 2023-01-01T00:00:00Z
+        :param to_ts: The datetime to retrieve usage to in ISO 8601 format. Defaults to the current calendar
+         month if not provided. Example: 2023-02-01T00:00:00Z
+        :return: UsageRead
+        """
+        endpoint = API_PATH["get_usage"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+
+        params = {}
+        if from_ts:
+            params["from"] = from_ts
+        if to_ts:
+            params["to"] = to_ts
+
+        response = requests.get(request_url, headers=self.client.base_header, params=params)
+
+        if response.status_code != 200:
+            error_message = response.json()["error"]
+            raise TursoRequestException(f"Something went wrong: {error_message}")
+
+        content = response.json()
+        return UsageRead.load(content)

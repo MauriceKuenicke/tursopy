@@ -3,25 +3,10 @@ import os
 import pytest
 import responses
 
+from tests.conftest import TURSO_TOKEN_VALIDATION_URL
 from tursopy import TursoClient
 from tursopy.dataclasses import PlatformTokenRead
 from tursopy.exceptions import InvalidPlatformTokenException, TursoRequestException
-
-TURSO_TOKEN_VALIDATION_URL = "https://api.turso.tech/v1/auth/validate"
-
-
-@pytest.fixture
-def dummy_settings() -> dict[str, str]:
-    required_dummy_settings = {x: "dummy" for x in ["platform_token"]}
-    return required_dummy_settings
-
-
-@pytest.fixture
-@responses.activate
-def client(dummy_settings: dict[str, str]) -> TursoClient:
-    responses.add(responses.GET, TURSO_TOKEN_VALIDATION_URL, json={}, status=200)
-    client = TursoClient(**dummy_settings)
-    return client
 
 
 class TestTursoClient:

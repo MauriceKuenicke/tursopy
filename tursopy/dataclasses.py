@@ -73,10 +73,10 @@ class DatabaseRead(BaseDataClass):
     regions: List[str]
     primaryRegion: str
     type: str
-    hostname: str
     version: str
     group: str
     sleeping: bool
+    hostname: str
 
 
 @dataclass

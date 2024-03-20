@@ -1,5 +1,4 @@
 import json
-from enum import Enum
 from typing import TYPE_CHECKING, List, Literal, Optional
 
 import requests
@@ -13,15 +12,6 @@ if TYPE_CHECKING:
 
 OptStr = Optional[str]
 OptBool = Optional[bool]
-
-
-class SeedType(Enum):
-    """
-    Seed type which can be used for a new database.
-    """
-
-    database = "database"
-    dump = "dump"
 
 
 class DatabasesClient:
@@ -60,7 +50,7 @@ class DatabasesClient:
         schema: OptStr = None,
         seed_name: OptStr = None,
         seed_ts: OptStr = None,
-        seed_type: Optional[Literal[SeedType.database]] = None,
+        seed_type: Optional[Literal["database", "dump"]] = None,
         seed_url: OptStr = None,
         size_limit: OptStr = None,
         group: str = "default",
@@ -80,11 +70,7 @@ class DatabasesClient:
         :param group: The name of the group where the database should be created. The group must already exist. Defaults to 'default'.
         :return: DatabaseCreated
         """
-        endpoint = API_PATH["create_database"].format(org_name=org_name)
-        request_url = self.client.base_url + endpoint
-
         self._validate_create_database_body_parameters(
-            name=name,
             is_schema=is_schema,
             schema=schema,
             seed_type=seed_type,
@@ -92,6 +78,9 @@ class DatabasesClient:
             seed_url=seed_url,
             seed_ts=seed_ts,
         )
+
+        endpoint = API_PATH["create_database"].format(org_name=org_name)
+        request_url = self.client.base_url + endpoint
 
         data = {
             "name": name,
@@ -129,10 +118,9 @@ class DatabasesClient:
 
     @staticmethod
     def _validate_create_database_body_parameters(
-        name: str,
         is_schema: OptBool,
         schema: OptStr,
-        seed_type: Optional[Literal[SeedType.database]],
+        seed_type: Optional[Literal["database", "dump"]],
         seed_name: OptStr,
         seed_url: OptStr,
         seed_ts: OptStr,
@@ -141,20 +129,17 @@ class DatabasesClient:
         Validate the body parameters to be a valid combination of parameters.
         Raises a ValueException upon detection of invalid parameter combinations.
         """
-        if not name:
-            raise ValueError("Database name is required.")
-
         if is_schema is not None and schema:
             raise ValueError("Can not specify a database as a parent and child database at the same time.")
 
         if any([seed_name, seed_ts, seed_url, seed_type]):
-            if seed_type not in {SeedType.database, SeedType.dump}:
-                raise ValueError(f"Seed type needs to be either {SeedType.database} or {SeedType.dump}.")
+            if seed_type not in ["database", "dump"]:
+                raise ValueError("Seed type needs to be either 'database' or 'dump'.")
 
-            if seed_type and not seed_name:
+            if seed_type == "database" and not seed_name:
                 raise ValueError("The name of an existing database when database is used as a seed type is missing.")
 
-            if seed_type and not seed_url:
+            if seed_type == "dump" and not seed_url:
                 raise ValueError(
                     "Seed URL missing. The URL returned by upload dump can be used " "with the dump seed type."
                 )

@@ -157,3 +157,109 @@ class TestTursoDBClient:
         # seed_type=dump + no url
         with pytest.raises(ValueError):
             db_client.create_database(org_name="my-org", name="my-db", seed_type="dump")
+
+    @responses.activate
+    def test_retrieve_db_successful(self, db_client: DatabasesClient) -> None:
+        response_object = {
+            "instance": {
+                "hostname": "[databaseName]-[organizationName].turso.io",
+                "name": "lhr",
+                "region": "lhr",
+                "type": "primary",
+                "uuid": "0be90471-6906-11ee-8553-eaa7715aeaf2",
+            }
+        }
+        responses.add(
+            responses.GET,
+            "https://api.turso.tech/v1/organizations/my-org/databases/my-db/instances/lhr",
+            json=response_object,
+            status=200,
+        )
+        response = db_client.get_instance(org_name="my-org", db_name="my-db", instance_name="lhr")
+        assert response.to_dict() == response_object["instance"]
+
+    @responses.activate
+    def test_retrieve_db_fails(self, db_client: DatabasesClient) -> None:
+        response_object = {"error": "Something went wrong."}
+        responses.add(
+            responses.GET,
+            "https://api.turso.tech/v1/organizations/my-org/databases/my-db/instances/lhr",
+            json=response_object,
+            status=404,
+        )
+
+        with pytest.raises(TursoRequestException):
+            db_client.get_instance(org_name="my-org", db_name="my-db", instance_name="lhr")
+
+    @responses.activate
+    def test_get_usage_db_successful(self, db_client: DatabasesClient) -> None:
+        response_object = {
+            "database": {
+                "instances": [
+                    {
+                        "usage": {"rows_read": 0, "rows_written": 0, "storage_bytes": 4096},
+                        "uuid": "cd831986-94e5-11ee-a6fe-7a52e1f7759a",
+                    },
+                    {
+                        "usage": {"rows_read": 0, "rows_written": 0, "storage_bytes": 4096},
+                        "uuid": "0be90471-6906-11ee-8553-eaa7715aeaf2",
+                    },
+                ],
+                "total": {"rows_read": 123, "rows_written": 123, "storage_bytes": 123},
+                "uuid": "0eb771dd-6906-11ee-8553-eaa7715aeaf2",
+            }
+        }
+        responses.add(
+            responses.GET,
+            "https://api.turso.tech/v1/organizations/my-org/databases/my-db/usage",
+            json=response_object,
+            status=200,
+        )
+        response = db_client.get_usage(org_name="my-org", db_name="my-db")
+        assert response.to_dict() == response_object["database"]
+
+    @responses.activate
+    def test_get_usage_db_fails(self, db_client: DatabasesClient) -> None:
+        response_object = {"error": "Something went wrong."}
+        responses.add(
+            responses.GET,
+            "https://api.turso.tech/v1/organizations/my-org/databases/my-db/usage",
+            json=response_object,
+            status=404,
+        )
+
+        with pytest.raises(TursoRequestException):
+            db_client.get_usage(org_name="my-org", db_name="my-db")
+
+    @responses.activate
+    def test_get_db_stats_successful(self, db_client: DatabasesClient) -> None:
+        response_object = {
+            "top_queries": [
+                {
+                    "query": "SELECT COUNT(*), CustomerID FROM Orders GROUP BY CustomerID HAVING COUNT(*) > 5;",
+                    "rows_read": 123,
+                    "rows_written": 4567,
+                }
+            ]
+        }
+        responses.add(
+            responses.GET,
+            "https://api.turso.tech/v1/organizations/my-org/databases/my-db/stats",
+            json=response_object,
+            status=200,
+        )
+        response = db_client.get_stats(org_name="my-org", db_name="my-db")
+        for indx, qry in enumerate(response):
+            assert qry.to_dict() == response_object["top_queries"][indx]
+
+    @responses.activate
+    def test_get_db_stats_fails(self, db_client: DatabasesClient) -> None:
+        response_object = {"error": "Something went wrong."}
+        responses.add(
+            responses.GET,
+            "https://api.turso.tech/v1/organizations/my-org/databases/my-db/stats",
+            json=response_object,
+            status=404,
+        )
+        with pytest.raises(TursoRequestException):
+            db_client.get_stats(org_name="my-org", db_name="my-db")

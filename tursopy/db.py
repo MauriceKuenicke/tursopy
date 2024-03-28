@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Literal, Optional
 
 import requests
 
-from .dataclasses import ConfigUpdateResponse, DatabaseCreated, DatabaseRead, UsageRead
+from .dataclasses import ConfigUpdateResponse, DatabaseCreated, DatabaseRead, DbInstance, StatQuery, UsageRead
 from .endpoints import API_PATH
 from .exceptions import TursoRequestException
 
@@ -26,6 +26,39 @@ class DatabasesClient:
         """
         self.client = base_client
 
+    def generate_token(self, org_name: str, db_name: str) -> str:
+        """
+        Generates an authorization token for the specified database.
+        TODO: Add attach body
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :return: JWT token
+        """
+        endpoint = API_PATH["generate_db_token"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+        response = requests.post(request_url, headers=self.client.base_header)
+
+        if response.status_code != 200:
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
+
+        content = response.json()
+        res: str = content["jwt"]
+        return res
+
+    def invalidate_tokens(self, org_name: str, db_name: str) -> None:
+        """
+        Invalidates all authorization tokens for the specified database.
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :return: None
+        """
+        endpoint = API_PATH["invalidate_tokens"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+        response = requests.post(request_url, headers=self.client.base_header)
+
+        if response.status_code != 200:
+            raise TursoRequestException(f"Something went wrong: {response.content!r}")
+
     def list_databases(self, org_name: str) -> List[DatabaseRead]:
         """
         Return a list of databases belonging to the organization or user.
@@ -41,6 +74,46 @@ class DatabasesClient:
 
         content = response.json()
         return [DatabaseRead.load(x) for x in content["databases"]]
+
+    def list_instances(self, org_name: str, db_name: str) -> List[DbInstance]:
+        """
+        Returns a list of instances of a database. Instances are the individual primary or replica databases in each region defined by the group.
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :return: List of database instances.
+        """
+        endpoint = API_PATH["list_instances"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+
+        response = requests.get(request_url, headers=self.client.base_header)
+
+        if response.status_code != 200:
+            error_message = response.json()["error"]
+            raise TursoRequestException(f"Something went wrong: {error_message}")
+
+        content = response.json()
+        return [DbInstance.load(x) for x in content["instances"]]
+
+    def get_instance(self, org_name: str, db_name: str, instance_name: str) -> DbInstance:
+        """
+        Return the individual database instance by name.
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :param instance_name: The name of the instance (location code).
+        :return: Database Instance
+        """
+        endpoint = API_PATH["retrieve_instance"].format(org_name=org_name, name=db_name, instance_name=instance_name)
+        request_url = self.client.base_url + endpoint
+
+        response = requests.get(request_url, headers=self.client.base_header)
+
+        if response.status_code != 200:
+            error_message = response.json()["error"]
+            raise TursoRequestException(f"Something went wrong: {error_message}")
+
+        content = response.json()
+        print(content)
+        return DbInstance.load(content["instance"])
 
     def create_database(
         self,
@@ -247,4 +320,23 @@ class DatabasesClient:
             raise TursoRequestException(f"Something went wrong: {error_message}")
 
         content = response.json()
-        return UsageRead.load(content)
+        return UsageRead.load(content["database"])
+
+    def get_stats(self, org_name: str, db_name: str) -> List[StatQuery]:
+        """
+        Fetch the top queries of a database, including the count of rows read and written.
+        :param org_name: The name of the organization or user.
+        :param db_name: The name of the database.
+        :return: List of top queries
+        """
+        endpoint = API_PATH["get_stats"].format(org_name=org_name, name=db_name)
+        request_url = self.client.base_url + endpoint
+
+        response = requests.get(request_url, headers=self.client.base_header)
+
+        if response.status_code != 200:
+            error_message = response.json()["error"]
+            raise TursoRequestException(f"Something went wrong: {error_message}")
+
+        content = response.json()
+        return [StatQuery.load(x) for x in content["top_queries"]]

@@ -15,4 +15,9 @@ API_PATH = {
     "retrieve_database": "/v1/organizations/{org_name}/databases/{name}",
     "update_database": "/v1/organizations/{org_name}/databases/{name}/configuration",
     "get_usage": "/v1/organizations/{org_name}/databases/{name}/usage",
+    "get_stats": "/v1/organizations/{org_name}/databases/{name}/stats",
+    "list_instances": "/v1/organizations/{org_name}/databases/{name}/instances",
+    "retrieve_instance": "/v1/organizations/{org_name}/databases/{name}/instances/{instance_name}",
+    "generate_db_token": "/v1/organizations/{org_name}/databases/{name}/auth/tokens",
+    "invalidate_tokens": "/v1/organizations/{org_name}/databases/{name}/auth/rotate",
 }

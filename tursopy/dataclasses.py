@@ -131,3 +131,28 @@ class UsageRead(BaseDataClass):
 
     instances: List[SingleDBUsage]
     total: Usage
+    uuid: str
+
+
+@dataclass
+class StatQuery(BaseDataClass):
+    """
+    Response model for a query in the database statistics.
+    """
+
+    query: str
+    rows_read: int
+    rows_written: int
+
+
+@dataclass
+class DbInstance(BaseDataClass):
+    """
+    Response model for a database instance.
+    """
+
+    hostname: str
+    name: str
+    region: str
+    type: str
+    uuid: str

@@ -28,6 +28,22 @@
 This project is in early development and currently not safe for use in a production environment. Use at your own risk.
 
 ---
+
+## Installation
+<div class="termy">
+
+```console
+$ pip install tursopy
+
+
+---> 100%
+
+Installing collected packages: tursopy
+Successfully installed tursopy-0.0.2
+```
+
+</div>
+
 ## Example Usage
 ```py
 from tursopy import TursoClient
@@ -56,13 +72,9 @@ TursoPy models mirror the Turso platform API response models as much as possible
 to access the data just by looking at the platform documentation. TursoPy sometimes flattens the responses if it makes
 sense. This happens mostly for response models which only contain a single field with data.
 
-<div class="termy">
 
 ```console
 $ curl -L https://api.turso.tech/v1/organizations/your-org/databases -H 'Authorization: Bearer YOUR-TOKEN'
-
-
----> 100%
 
 {
   "databases": [
@@ -90,7 +102,6 @@ $ curl -L https://api.turso.tech/v1/organizations/your-org/databases -H 'Authori
 }
 ```
 
-</div>
 
 In those cases,
 you'll be able to access the data directly without going through that extra level.

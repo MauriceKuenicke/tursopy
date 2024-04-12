@@ -26,6 +26,11 @@
 # ⚠️ Important
 This project is in early development and currently not safe for use in a production environment. Use at your own risk.
 
+## Installation
+```sh
+pip install tursopy
+```
+
 ## Example Usage
 ```py
 from tursopy import TursoClient

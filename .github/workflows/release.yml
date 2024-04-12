@@ -93,5 +93,3 @@ jobs:
 
       - name: Deploy Docs
         run: mkdocs gh-deploy --force
-        env:
-          GH_TOKEN: ${{ secrets.MKDOCS_DEPLOY_TOKEN }}

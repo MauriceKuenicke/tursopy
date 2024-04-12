@@ -1,4 +1,4 @@
-name: Release Workflow
+name: Release
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
         run: pytest
 
   deploy:
-    needs: build
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

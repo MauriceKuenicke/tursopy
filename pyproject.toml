@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tursopy_dimico"
+name = "tursopy"
 version = "v0.0.0"
 authors = [
     { name="Maurice Künicke", email="m.kuenicke1995@gmail.com" },

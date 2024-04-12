@@ -1,3 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tursopy_dimico"
+version = "v0.0.0"
+authors = [
+    { name="Maurice Künicke", email="m.kuenicke1995@gmail.com" },
+]
+description = "Fully type-hinted Turso Platform API wrapper for Python. "
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests"
+]
+
+[project.urls]
+Homepage = "https://github.com/MauriceKuenicke/tursopy"
+Issues = "https://github.com/MauriceKuenicke/tursopy/issues"
+
+
 [tool.ruff]
 line-length = 120
 
